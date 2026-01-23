@@ -1,0 +1,38 @@
+name: frontend
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Tus librerías actuales
+  cupertino_icons: ^1.0.8
+  image_picker: ^1.2.1
+  flutter_map: ^8.2.2
+  latlong2: ^0.9.1
+  geolocator: ^14.0.2
+  http: ^1.2.0
+  google_fonts: ^6.1.0
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  flutter_lints: ^6.0.0
+  # --- AQUÍ AGREGAMOS LA LIBRERÍA DE ÍCONOS (Identado con 2 espacios) ---
+  flutter_launcher_icons: "^0.13.1"
+
+flutter:
+  uses-material-design: true
+
+# --- CONFIGURACIÓN DE ÍCONOS (Al final del archivo, SIN espacios al inicio) ---
+flutter_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/icon.png"

@@ -1,0 +1,22 @@
+// INSTRUCCIONES PARA PROBAR EL JUEGO
+
+Para probar el mini-juego, agrega esta línea en main.dart después del login:
+
+Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(builder: (_) => const SkateGameScreen()),
+);
+
+O crea un botón en cualquier pantalla:
+
+ElevatedButton(
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SkateGameScreen()),
+    );
+  },
+  child: const Text('JUGAR'),
+)
+
+// NOTA: El import ya está agregado: import 'skate_game.dart';
