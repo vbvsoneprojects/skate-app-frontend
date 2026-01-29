@@ -56,6 +56,8 @@ class _SkateGameScreenState extends State<SkateGameScreen> {
         final int points = (result['points_earned'] ?? 0) as int;
         final int streak = (result['current_streak'] ?? 1) as int;
         
+        final bool isNewRecord = (result['new_record'] ?? false) as bool;
+        
         UserData.puntosActuales += points;
         UserData.puntosHistoricos += points;
         UserData.rachaActual = streak;
@@ -70,21 +72,38 @@ class _SkateGameScreenState extends State<SkateGameScreen> {
                 borderRadius: BorderRadius.circular(20),
                 side: const BorderSide(color: Color(0xFFFF6B35), width: 3),
               ),
-              title: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              title: Column(
                 children: [
-                  Icon(Icons.star, color: Color(0xFFFFD700), size: 40),
-                  SizedBox(width: 10),
-                  Text(
-                    '¡PUNTOS GANADOS!',
-                    style: TextStyle(
-                      color: Color(0xFFFF6B35),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
-                    ),
+                   if (isNewRecord) ...[
+                      const Text(
+                        "🏆 ¡NUEVO RÉCORD! 🏆",
+                        style: TextStyle(
+                          color: Color(0xFFFFD700),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 28,
+                          letterSpacing: 2,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 10),
+                   ],
+                   const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.star, color: Color(0xFFFFD700), size: 30),
+                      SizedBox(width: 8),
+                      Text(
+                        '¡PUNTOS GANADOS!',
+                        style: TextStyle(
+                          color: Color(0xFFFF6B35),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Icon(Icons.star, color: Color(0xFFFFD700), size: 30),
+                    ],
                   ),
-                  SizedBox(width: 10),
-                  Icon(Icons.star, color: Color(0xFFFFD700), size: 40),
                 ],
               ),
               content: Column(
