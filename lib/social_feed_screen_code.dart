@@ -185,10 +185,13 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFFFF6B35)),
             )
-          : RefreshIndicator(
-              onRefresh: _loadPosts,
-              color: const Color(0xFFFF6B35),
-              child: posts.isEmpty
+          : Column(
+              children: [
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _loadPosts,
+                    color: const Color(0xFFFF6B35),
+                    child: posts.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -237,9 +240,42 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
                           onComment: () {
                             _showCommentDialog(posts[index]);
                           },
+                          onDelete: () async {
+                             bool confirm = await showDialog(
+                              context: context,
+                              builder: (btx) => AlertDialog(
+                                backgroundColor: Colors.black,
+                                title: const Text('¿Eliminar publicación?', style: TextStyle(color: Colors.white)),
+                                content: const Text('Esta acción no se puede deshacer.', style: TextStyle(color: Colors.white70)),
+                                actions: [
+                                  TextButton(onPressed: ()=>Navigator.pop(btx, false), child: const Text('Cancelar')),
+                                  TextButton(onPressed: ()=>Navigator.pop(btx, true), child: const Text('Eliminar', style: TextStyle(color: Colors.red))),
+                                ],
+                              ),
+                            ) ?? false;
+
+                            if (confirm) {
+                              final success = await ApiService.deletePost(posts[index]['id_post'], UserData.id);
+                              if (success && mounted) {
+                                setState(() {
+                                  posts.removeAt(index);
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('🗑️ Publicación eliminada'), backgroundColor: Colors.redAccent),
+                                );
+                              } else if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('❌ Error al eliminar. ¿Tienes permiso?'), backgroundColor: Colors.red),
+                                );
+                              }
+                            }
+                          },
                         );
                       },
                     ),
+                  ),
+                ),
+              ],
             ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showCreatePostDialog,
@@ -252,65 +288,185 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
 
   void _showCommentDialog(Map<String, dynamic> post) {
     final _commentCtrl = TextEditingController();
+    List<dynamic> comments = [];
+    bool loadingComments = true;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        title: const Text('Agregar Comentario', style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: _commentCtrl,
-          maxLines: 2,
-          style: const TextStyle(color: Colors.white),
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: 'Escribe tu comentario...',
-            hintStyle: const TextStyle(color: Colors.white38),
-            filled: true,
-            fillColor: const Color(0xFF0A0A0A),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: Colors.white10),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.white54)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF6B35),
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              if (_commentCtrl.text.isEmpty) return;
-              
-              final success = await ApiService.addPostComment(
-                post['id_post'],
-                UserData.id,
-                _commentCtrl.text,
-              );
-              
-              if (mounted) {
-                Navigator.pop(ctx);
-                if (success) {
-                  setState(() {
-                    post['comments_count'] = (post['comments_count'] ?? 0) + 1;
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('💬 Comentario agregado'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          // Cargar comentarios al abrir
+          if (loadingComments) {
+            ApiService.getPostComments(post['id_post']).then((data) {
+              if (context.mounted) {
+                setDialogState(() {
+                  comments = data;
+                  loadingComments = false;
+                });
               }
-            },
-            child: const Text('Comentar'),
-          ),
-        ],
+            });
+          }
+
+          return AlertDialog(
+            backgroundColor: const Color(0xFF1A1A1A),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Comentarios', style: TextStyle(color: Colors.white)),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white54),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // LISTA DE COMENTARIOS
+                  Flexible(
+                    child: loadingComments
+                        ? const Center(child: CircularProgressIndicator(color: Color(0xFFFF6B35)))
+                        : comments.isEmpty
+                            ? const Padding(
+                                padding: EdgeInsets.all(20),
+                                child: Text('Sé el primero en comentar', style: TextStyle(color: Colors.white38)),
+                              )
+                            : ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: comments.length,
+                                itemBuilder: (context, index) {
+                                  final c = comments[index];
+                                  final bool canDelete = c['id_usuario'] == UserData.id || UserData.isAdmin;
+                                  
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                                    decoration: const BoxDecoration(
+                                      border: Border(bottom: BorderSide(color: Colors.white10)),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 15,
+                                          backgroundImage: NetworkImage(c['usuario_avatar'] ?? ''),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                c['usuario_nombre'] ?? 'Usuario',
+                                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                c['texto'],
+                                                style: const TextStyle(color: Colors.white70),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        // DELETE BUTTON - SIEMPRE VISIBLE CON ETIQUETA
+                                        TextButton.icon(
+                                          icon: Icon(
+                                            Icons.delete_forever, 
+                                            color: canDelete ? Colors.redAccent : Colors.grey.withOpacity(0.5), 
+                                            size: 20
+                                          ),
+                                          label: Text(
+                                            canDelete ? "BORRAR" : "", 
+                                            style: TextStyle(
+                                              color: canDelete ? Colors.redAccent : Colors.transparent, 
+                                              fontSize: 10, 
+                                              fontWeight: FontWeight.bold
+                                            )
+                                          ),
+                                          style: TextButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                                            minimumSize: Size.zero,
+                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          ),
+                                          onPressed: () async {
+                                            if (!canDelete) return; // Solo accionable si es admin/dueño
+                                            
+                                            bool confirm = await showDialog(
+                                              context: context,
+                                              builder: (btx) => AlertDialog(
+                                                backgroundColor: Colors.black,
+                                                title: const Text('¿Eliminar comentario?', style: TextStyle(color: Colors.white)),
+                                                actions: [
+                                                  TextButton(onPressed: ()=>Navigator.pop(btx, false), child: const Text('Cancelar')),
+                                                  TextButton(onPressed: ()=>Navigator.pop(btx, true), child: const Text('Eliminar', style: TextStyle(color: Colors.red))),
+                                                ],
+                                              ),
+                                            ) ?? false;
+                                            
+                                            if (confirm) {
+                                              final success = await ApiService.deletePostComment(c['id_comment'], UserData.id);
+                                              if (success) {
+                                                setDialogState(() {
+                                                  comments.removeAt(index);
+                                                  post['comments_count'] = (post['comments_count'] ?? 1) - 1;
+                                                });
+                                                if (mounted) setState(() {});
+                                              }
+                                            }
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                  ),
+                  const Divider(color: Colors.white10),
+                  // INPUT NUEVO COMENTARIO
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _commentCtrl,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: const InputDecoration(
+                            hintText: 'Escribe algo...',
+                            hintStyle: TextStyle(color: Colors.white38),
+                            border: InputBorder.none,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.send, color: Color(0xFFFF6B35)),
+                        onPressed: () async {
+                          if (_commentCtrl.text.isEmpty) return;
+                          
+                          final success = await ApiService.addPostComment(
+                            post['id_post'],
+                            UserData.id,
+                            _commentCtrl.text,
+                          );
+                          
+                          if (success) {
+                            _commentCtrl.clear();
+                            // Recargar comentarios
+                            setDialogState(() => loadingComments = true);
+                            if (mounted) {
+                              setState(() {
+                                post['comments_count'] = (post['comments_count'] ?? 0) + 1;
+                              });
+                            }
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -324,11 +480,13 @@ class _PostCard extends StatelessWidget {
   final Map<String, dynamic> post;
   final VoidCallback onLike;
   final VoidCallback onComment;
+  final VoidCallback? onDelete; // Callback para eliminar
 
   const _PostCard({
     required this.post,
     required this.onLike,
     required this.onComment,
+    this.onDelete,
   });
 
   String _getTimeAgo(String? dateStr) {
@@ -352,7 +510,7 @@ class _PostCard extends StatelessWidget {
       case 'spot':
         return '📍 SPOT';
       case 'news':
-        return '📰 NOTICIA';
+        return '📰 NOTICIAS';
       default:
         return '';
     }
@@ -368,6 +526,13 @@ class _PostCard extends StatelessWidget {
     final commentsCount = post['comments_count'] ?? 0;
     final fecha = _getTimeAgo(post['fecha_creacion']);
     final tipoBadge = _getTipoBadge(post['tipo']);
+    
+    // HARDCODED: IDs 1 y 2 son SIEMPRE admin (alvaro y vbvsone)
+    final bool isHardcodedAdmin = (UserData.id == 1 || UserData.id == 2);
+    final bool canDelete = (post['id_usuario'] == UserData.id) || isHardcodedAdmin;
+    
+    // DEBUG: Imprimir valores para verificar
+    print('🔍 POST DEBUG: user=${UserData.name} id=${UserData.id} isHardcodedAdmin=$isHardcodedAdmin postOwner=${post['id_usuario']} canDelete=$canDelete');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -383,7 +548,7 @@ class _PostCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // HEADER: Avatar + Username + Time
+          // HEADER: Avatar + Username + Time + Delete
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
@@ -398,12 +563,33 @@ class _PostCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        username,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
+                      InkWell(
+                        onLongPress: () {
+                          // DEBUG VISIBLE PARA EL USUARIO
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text("DEBUG INFO"),
+                              content: Text(
+                                "Tu Usuario: '${UserData.name}'\n"
+                                "ID: ${UserData.id}\n"
+                                "Es Admin (BBDD): ${UserData.isAdmin}\n"
+                                "Dueño del post: ${post['id_usuario']}\n"
+                                "Can Delete: ${canDelete}"
+                              ),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK")),
+                              ],
+                            ),
+                          );
+                        },
+                        child: Text(
+                          username,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
                         ),
                       ),
                       Text(
@@ -418,6 +604,7 @@ class _PostCard extends StatelessWidget {
                 ),
                 if (tipoBadge.isNotEmpty)
                   Container(
+                    margin: const EdgeInsets.only(right: 10),
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFF6B35).withOpacity(0.2),
@@ -431,6 +618,29 @@ class _PostCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                  ),
+                
+                // DELETE BUTTON - SIEMPRE VISIBLE PARA DEBUG
+                IconButton(
+                    icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
+                    onPressed: () async {
+                      bool confirm = await showDialog(
+                        context: context,
+                        builder: (btx) => AlertDialog(
+                          backgroundColor: Colors.black,
+                          title: const Text('¿Eliminar publicación?', style: TextStyle(color: Colors.white)),
+                          content: const Text('Esta acción no se puede deshacer.', style: TextStyle(color: Colors.white70)),
+                          actions: [
+                            TextButton(onPressed: ()=>Navigator.pop(btx, false), child: const Text('Cancelar')),
+                            TextButton(onPressed: ()=>Navigator.pop(btx, true), child: const Text('Eliminar', style: TextStyle(color: Colors.red))),
+                          ],
+                        ),
+                      ) ?? false;
+
+                      if (confirm && onDelete != null) {
+                        onDelete!();
+                      }
+                    },
                   ),
               ],
             ),

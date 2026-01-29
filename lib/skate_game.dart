@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'main.dart'; // Para ApiService y UserData
+import 'main.dart';
 
 class SkateGameScreen extends StatefulWidget {
   const SkateGameScreen({super.key});
@@ -20,7 +20,6 @@ class _SkateGameScreenState extends State<SkateGameScreen> {
   void _startGame() async {
     setState(() => loading = true);
     
-    // Iniciar sesión en el backend
     final session = await ApiService.startGameSession(UserData.id);
     
     if (session != null && session['session_token'] != null) {
@@ -50,7 +49,6 @@ class _SkateGameScreenState extends State<SkateGameScreen> {
       score = finalScore;
     });
     
-    // Enviar score al backend
     if (sessionToken != null) {
       final result = await ApiService.submitScore(sessionToken!, finalScore);
       
@@ -58,19 +56,130 @@ class _SkateGameScreenState extends State<SkateGameScreen> {
         final int points = (result['points_earned'] ?? 0) as int;
         final int streak = (result['current_streak'] ?? 1) as int;
         
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('¡Ganaste $points puntos! Racha: $streak días'),
-              backgroundColor: const Color(0xFFFF6B35),
-            ),
-          );
-        }
-        
-        // Actualizar puntos locales
         UserData.puntosActuales += points;
         UserData.puntosHistoricos += points;
         UserData.rachaActual = streak;
+        
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              backgroundColor: const Color(0xFF1A1A1A),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: const BorderSide(color: Color(0xFFFF6B35), width: 3),
+              ),
+              title: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.star, color: Color(0xFFFFD700), size: 40),
+                  SizedBox(width: 10),
+                  Text(
+                    '¡PUNTOS GANADOS!',
+                    style: TextStyle(
+                      color: Color(0xFFFF6B35),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Icon(Icons.star, color: Color(0xFFFFD700), size: 40),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '+$points',
+                    style: const TextStyle(
+                      fontSize: 72,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFFF6B35),
+                    ),
+                  ),
+                  const Text(
+                    'PUNTOS',
+                    style: TextStyle(
+                      fontSize: 24,
+                      color: Colors.white70,
+                      letterSpacing: 4,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Total:', style: TextStyle(color: Colors.white70)),
+                            Text(
+                              '${UserData.puntosActuales}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Racha:', style: TextStyle(color: Colors.white70)),
+                            Row(
+                              children: [
+                                const Icon(Icons.local_fire_department, color: Colors.orange, size: 20),
+                                const SizedBox(width: 5),
+                                Text(
+                                  '$streak días',
+                                  style: const TextStyle(
+                                    color: Colors.orange,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                Center(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF6B35),
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    child: const Text(
+                      'CONTINUAR',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
       }
     }
   }
@@ -80,7 +189,7 @@ class _SkateGameScreenState extends State<SkateGameScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
-        title: const Text('SKATE GAME'),
+        title: const Text('SKATE STREET'),
         backgroundColor: Colors.transparent,
       ),
       body: !gameStarted
@@ -103,7 +212,7 @@ class _SkateGameScreenState extends State<SkateGameScreen> {
           ),
           const SizedBox(height: 30),
           const Text(
-            'SKATE JUMP',
+            'SKATE STREET',
             style: TextStyle(
               fontSize: 48,
               fontWeight: FontWeight.bold,
@@ -111,9 +220,32 @@ class _SkateGameScreenState extends State<SkateGameScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Toca para saltar tachos',
-            style: TextStyle(fontSize: 18, color: Colors.grey),
+          Container(
+            padding: const EdgeInsets.all(20),
+            margin: const EdgeInsets.symmetric(horizontal: 40),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: Color(0xFFFF6B35).withOpacity(0.5)),
+            ),
+            child: Column(
+              children: const [
+                Text(
+                  '🛹 Tap = OLLIE (saltar)',
+                  style: TextStyle(fontSize: 16, color: Colors.white70),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  '🔥 Esquiva obstáculos',
+                  style: TextStyle(fontSize: 16, color: Colors.white70),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  '⚡ Velocidad aumenta',
+                  style: TextStyle(fontSize: 16, color: Colors.white70),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 50),
           ElevatedButton(
@@ -179,7 +311,7 @@ class _SkateGameScreenState extends State<SkateGameScreen> {
 }
 
 // ==========================================
-// GAME WIDGET CON CANVAS
+// GAME ENGINE MEJORADO
 // ==========================================
 
 class SkateGameWidget extends StatefulWidget {
@@ -195,28 +327,28 @@ class _SkateGameWidgetState extends State<SkateGameWidget>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   
-  // Player
-  double playerY = 0; // Posición Y del jugador (0 = suelo)
+  // Player - POSICIÓN MEJORADA
+  double playerY = 250; // Altura fija cómoda para jugar
   double playerVelocity = 0;
   bool isJumping = false;
   
   // Game
   int score = 0;
-  double gameSpeed = 5.0;
+  double gameSpeed = 7.0;
   List<Obstacle> obstacles = [];
   double obstacleTimer = 0;
   
-  // Physics
-  final double gravity = 0.8;
-  final double jumpForce = -15.0;
-  final double groundLevel = 0;
+  // Physics mejoradas
+  final double gravity = 1.5;
+  final double jumpForce = -25.0; // Negativo para saltar hacia arriba
+  final double playerGroundY = 250; // Posición en el suelo
   
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 16), // ~60 FPS
+      duration: const Duration(milliseconds: 16),
     )..addListener(_updateGame);
     _controller.repeat();
   }
@@ -229,15 +361,17 @@ class _SkateGameWidgetState extends State<SkateGameWidget>
 
   void _updateGame() {
     setState(() {
-      // Física del jugador
-      playerVelocity += gravity;
-      playerY += playerVelocity;
+      // Física del salto
+      if (isJumping) {
+        playerVelocity += gravity;
+        playerY += playerVelocity;
 
-      // Limitar al suelo
-      if (playerY >= groundLevel) {
-        playerY = groundLevel;
-        playerVelocity = 0;
-        isJumping = false;
+        // Volver al suelo
+        if (playerY >= playerGroundY) {
+          playerY = playerGroundY;
+          playerVelocity = 0;
+          isJumping = false;
+        }
       }
 
       // Mover obstáculos
@@ -248,16 +382,32 @@ class _SkateGameWidgetState extends State<SkateGameWidget>
       // Eliminar obstáculos fuera de pantalla
       obstacles.removeWhere((obs) => obs.x < -100);
 
-      // Generar nuevos obstáculos
+      // Generar obstáculos
       obstacleTimer += 1;
-      if (obstacleTimer > 100) {
-        obstacles.add(Obstacle(x: 400, y: 0));
+      final int spawnInterval = max(50 - (score ~/ 8), 35);
+      
+      if (obstacleTimer > spawnInterval) {
+        final random = Random();
+        final obstacleType = random.nextInt(3);
+        
+        // Tipos de obstáculos variados
+        if (obstacleType == 0) {
+          // Cono de tráfico
+          obstacles.add(Obstacle(x: 400, y: playerGroundY - 35, height: 35, width: 25, type: 'cone'));
+        } else if (obstacleType == 1) {
+          // Banca baja
+          obstacles.add(Obstacle(x: 400, y: playerGroundY - 30, height: 30, width: 50, type: 'bench'));
+        } else {
+          // Tacho
+          obstacles.add(Obstacle(x: 400, y: playerGroundY - 40, height: 40, width: 30, type: 'trash'));
+        }
+        
         obstacleTimer = 0;
         score += 1;
         
-        // Aumentar velocidad gradualmente
-        if (score % 10 == 0) {
-          gameSpeed += 0.5;
+        // Aumentar velocidad
+        if (score % 10 == 0 && gameSpeed < 14) {
+          gameSpeed += 0.7;
         }
       }
 
@@ -267,18 +417,18 @@ class _SkateGameWidgetState extends State<SkateGameWidget>
   }
 
   void _checkCollisions() {
-    const double playerX = 50;
+    const double playerX = 80;
     const double playerWidth = 40;
     const double playerHeight = 60;
 
     for (var obstacle in obstacles) {
-      // Hitbox del obstáculo
-      if (playerX + playerWidth > obstacle.x &&
-          playerX < obstacle.x + obstacle.width &&
-          playerY + playerHeight > obstacle.y) {
-        // Colisión detectada
+      // Colisión con margen de error pequeño
+      if (playerX + playerWidth - 10 > obstacle.x &&
+          playerX + 10 < obstacle.x + obstacle.width &&
+          playerY + playerHeight - 5 > obstacle.y) {
         _controller.stop();
         widget.onGameOver(score);
+        return;
       }
     }
   }
@@ -295,7 +445,16 @@ class _SkateGameWidgetState extends State<SkateGameWidget>
     return GestureDetector(
       onTap: _jump,
       child: Container(
-        color: const Color(0xFF0A0A0A),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF1A1A2E),
+              Color(0xFF16213E),
+            ],
+          ),
+        ),
         child: Stack(
           children: [
             // Canvas del juego
@@ -303,19 +462,44 @@ class _SkateGameWidgetState extends State<SkateGameWidget>
               painter: GamePainter(
                 playerY: playerY,
                 obstacles: obstacles,
+                playerGroundY: playerGroundY,
               ),
               child: Container(),
             ),
-            // Score
+            // Score grande
             Positioned(
-              top: 20,
+              top: 40,
               right: 20,
-              child: Text(
-                'SCORE: $score',
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFFF6B35),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFFF6B35), width: 2),
+                ),
+                child: Text(
+                  '$score',
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFFF6B35),
+                  ),
+                ),
+              ),
+            ),
+            // Velocímetro
+            Positioned(
+              top: 100,
+              right: 20,
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '⚡ ${gameSpeed.toStringAsFixed(1)}x',
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
                 ),
               ),
             ),
@@ -327,103 +511,184 @@ class _SkateGameWidgetState extends State<SkateGameWidget>
 }
 
 // ==========================================
-// PAINTER DEL JUEGO
+// PAINTER OPTIMIZADO
 // ==========================================
 
 class GamePainter extends CustomPainter {
   final double playerY;
   final List<Obstacle> obstacles;
+  final double playerGroundY;
 
   GamePainter({
     required this.playerY,
     required this.obstacles,
+    required this.playerGroundY,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint();
 
-    // Dibujar suelo
-    paint.color = const Color(0xFF333333);
+    // Suelo de ciudad con textura
+    paint.color = const Color(0xFF2A2A2A);
     canvas.drawRect(
-      Rect.fromLTWH(0, size.height - 50, size.width, 50),
+      Rect.fromLTWH(0, playerGroundY + 60, size.width, 100),
       paint,
     );
+    
+    // Líneas de carretera
+    paint.color = const Color(0xFFFFFFFF).withOpacity(0.2);
+    for (int i = 0; i < size.width; i += 80) {
+      canvas.drawRect(
+        Rect.fromLTWH(i.toDouble(), playerGroundY + 75, 50, 4),
+        paint,
+      );
+    }
 
-    // Dibujar jugador (stickman simple)
-    _drawPlayer(canvas, size, paint);
+    // Skater
+    _drawSkater(canvas, paint);
 
-    // Dibujar obstáculos (tachos)
+    // Obstáculos
     for (var obstacle in obstacles) {
-      _drawObstacle(canvas, size, paint, obstacle);
+      _drawObstacle(canvas, paint, obstacle);
     }
   }
 
-  void _drawPlayer(Canvas canvas, Size size, Paint paint) {
-    const double playerX = 50;
-    final double playerBottomY = size.height - 50 - playerY;
+  void _drawSkater(Canvas canvas, Paint paint) {
+    const double playerX = 80;
 
     paint.color = Colors.white;
     paint.style = PaintingStyle.stroke;
-    paint.strokeWidth = 3;
+    paint.strokeWidth = 4;
 
     // Cabeza
     canvas.drawCircle(
-      Offset(playerX + 20, playerBottomY - 50),
-      10,
+      Offset(playerX + 20, playerY - 50),
+      12,
       paint,
     );
 
-    // Cuerpo
+    // Cuerpo inclinado (postura de skate)
     canvas.drawLine(
-      Offset(playerX + 20, playerBottomY - 40),
-      Offset(playerX + 20, playerBottomY - 10),
+      Offset(playerX + 20, playerY - 38),
+      Offset(playerX + 15, playerY - 10),
       paint,
     );
 
-    // Brazos
+    // Brazos extendidos
     canvas.drawLine(
-      Offset(playerX + 20, playerBottomY - 30),
-      Offset(playerX + 10, playerBottomY - 20),
+      Offset(playerX + 15, playerY - 25),
+      Offset(playerX - 5, playerY - 20),
       paint,
     );
     canvas.drawLine(
-      Offset(playerX + 20, playerBottomY - 30),
-      Offset(playerX + 30, playerBottomY - 20),
+      Offset(playerX + 15, playerY - 25),
+      Offset(playerX + 35, playerY - 15),
       paint,
     );
 
-    // Piernas
+    // Piernas flexionadas
     canvas.drawLine(
-      Offset(playerX + 20, playerBottomY - 10),
-      Offset(playerX + 10, playerBottomY),
+      Offset(playerX + 15, playerY - 10),
+      Offset(playerX + 5, playerY + 5),
       paint,
     );
     canvas.drawLine(
-      Offset(playerX + 20, playerBottomY - 10),
-      Offset(playerX + 30, playerBottomY),
+      Offset(playerX + 15, playerY - 10),
+      Offset(playerX + 25, playerY + 5),
       paint,
     );
-  }
-
-  void _drawObstacle(Canvas canvas, Size size, Paint paint, Obstacle obstacle) {
-    final double obstacleY = size.height - 50 - obstacle.y;
-
+    
+    // Skateboard
     paint.color = const Color(0xFFFF6B35);
     paint.style = PaintingStyle.fill;
+    final skateboardPath = Path();
+    skateboardPath.moveTo(playerX, playerY + 5);
+    skateboardPath.lineTo(playerX + 40, playerY + 5);
+    skateboardPath.lineTo(playerX + 38, playerY + 10);
+    skateboardPath.lineTo(playerX + 2, playerY + 10);
+    skateboardPath.close();
+    canvas.drawPath(skateboardPath, paint);
 
-    // Tacho de basura (rectángulo + tapa)
-    canvas.drawRect(
-      Rect.fromLTWH(obstacle.x, obstacleY - 40, 30, 40),
-      paint,
-    );
+    // Ruedas
+    paint.color = Colors.black;
+    canvas.drawCircle(Offset(playerX + 8, playerY + 12), 4, paint);
+    canvas.drawCircle(Offset(playerX + 32, playerY + 12), 4, paint);
+  }
 
-    // Tapa
-    paint.color = const Color(0xFFFF8C42);
-    canvas.drawRect(
-      Rect.fromLTWH(obstacle.x - 5, obstacleY - 45, 40, 5),
-      paint,
-    );
+  void _drawObstacle(Canvas canvas, Paint paint, Obstacle obstacle) {
+    paint.style = PaintingStyle.fill;
+
+    if (obstacle.type == 'cone') {
+      // Cono de tráfico naranja
+      final conePath = Path();
+      conePath.moveTo(obstacle.x + obstacle.width / 2, obstacle.y);
+      conePath.lineTo(obstacle.x, obstacle.y + obstacle.height);
+      conePath.lineTo(obstacle.x + obstacle.width, obstacle.y + obstacle.height);
+      conePath.close();
+      
+      paint.color = const Color(0xFFFF6B35);
+      canvas.drawPath(conePath, paint);
+      
+      // Franja blanca
+      paint.color = Colors.white;
+      canvas.drawRect(
+        Rect.fromLTWH(obstacle.x + 3, obstacle.y + obstacle.height - 15, obstacle.width - 6, 4),
+        paint,
+      );
+    } else if (obstacle.type == 'bench') {
+      // Banca de ciudad
+      paint.color = const Color(0xFF8B4513);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(obstacle.x, obstacle.y, obstacle.width, obstacle.height),
+          const Radius.circular(5),
+        ),
+        paint,
+      );
+      
+      // Detalles de la banca
+      paint.color = const Color(0xFF654321);
+      for (int i = 0; i < 3; i++) {
+        canvas.drawRect(
+          Rect.fromLTWH(obstacle.x + (i * 15), obstacle.y, 2, obstacle.height),
+          paint,
+        );
+      }
+    } else {
+      // Tacho de basura
+      final gradient = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          const Color(0xFFFF8C42),
+          const Color(0xFFFF6B35),
+        ],
+      );
+
+      paint.shader = gradient.createShader(
+        Rect.fromLTWH(obstacle.x, obstacle.y, obstacle.width, obstacle.height),
+      );
+
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(obstacle.x, obstacle.y, obstacle.width, obstacle.height),
+          const Radius.circular(5),
+        ),
+        paint,
+      );
+
+      // Tapa
+      paint.shader = null;
+      paint.color = const Color(0xFFFFAA66);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(obstacle.x - 3, obstacle.y - 5, obstacle.width + 6, 6),
+          const Radius.circular(3),
+        ),
+        paint,
+      );
+    }
   }
 
   @override
@@ -437,8 +702,15 @@ class GamePainter extends CustomPainter {
 class Obstacle {
   double x;
   double y;
-  final double width = 30;
-  final double height = 40;
+  double width;
+  double height;
+  String type;
 
-  Obstacle({required this.x, required this.y});
+  Obstacle({
+    required this.x,
+    required this.y,
+    required this.height,
+    required this.width,
+    required this.type,
+  });
 }

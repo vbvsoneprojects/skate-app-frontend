@@ -11,6 +11,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'messages_screen.dart';
 import 'skate_game.dart';
+import 'leaderboard_screen.dart';
+import 'rewards_screen.dart';
 
 void main() {
   runApp(MaterialApp(
@@ -444,7 +446,7 @@ class ApiService {
   // --- ADMIN METHODS ---
   static Future<bool> deleteSpot(int idSpot) async {
     try {
-      final res = await http.delete(Uri.parse('$baseUrl/spots/$idSpot'));
+      final res = await http.delete(Uri.parse('$baseUrl/spots/$idSpot?user_id=${UserData.id}'));
       return res.statusCode == 200;
     } catch (e) {
       return false;
@@ -453,7 +455,7 @@ class ApiService {
 
   static Future<bool> deleteComment(int idComment) async {
     try {
-      final res = await http.delete(Uri.parse('$baseUrl/comments/$idComment'));
+      final res = await http.delete(Uri.parse('$baseUrl/comments/$idComment?user_id=${UserData.id}'));
       return res.statusCode == 200;
     } catch (e) {
       return false;
@@ -627,6 +629,23 @@ class ApiService {
       print("Error leaderboard: $e");
     }
     return [];
+  }
+  static Future<bool> deletePost(int postId, int userId) async {
+    try {
+      final res = await http.delete(Uri.parse('$baseUrl/posts/$postId?user_id=$userId'));
+      return res.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static Future<bool> deletePostComment(int commentId, int userId) async {
+    try {
+      final res = await http.delete(Uri.parse('$baseUrl/posts/comments/$commentId?user_id=$userId'));
+      return res.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
   }
 }
 
@@ -1002,16 +1021,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(index: _idx, children: _screens),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SkateGameScreen()),
-          );
-        },
-        backgroundColor: const Color(0xFFFF6B35),
-        child: const Icon(Icons.sports_esports, color: Colors.white),
-      ),
+      /* FAB ELIMINADO - MOVIDO A COMPETIR TAB */
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(
           backgroundColor: const Color(0xFF0A0A0A),
@@ -2791,6 +2801,61 @@ class _CompeteScreenState extends State<CompeteScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 30),
+               // --- NUEVO BOTÓN MINI-JUEGO ---
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SkateGameScreen()),
+                  );
+                },
+                child: Container(
+                  width: 300,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A1A1A),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: Colors.white24, width: 1),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.blueAccent.withOpacity(0.1),
+                        ),
+                        child: const Icon(Icons.sports_esports, size: 30, color: Colors.blueAccent),
+                      ),
+                      const SizedBox(width: 20),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "SKATE STREET",
+                            style: GoogleFonts.outfit(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            "ENTRENAMIENTO SOLO",
+                            style: GoogleFonts.inter(
+                              color: Colors.white54, 
+                              fontSize: 10, 
+                              letterSpacing: 1
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -3349,6 +3414,65 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     color: const Color(0xFFFF6B35), 
                     letterSpacing: 3, 
                     fontWeight: FontWeight.bold
+                  ),
+                ),
+                const SizedBox(height: 30),
+                
+                // 🛹 ECONOMY STATS
+                Container(
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.only(bottom: 15),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "PROGRESO",
+                        style: GoogleFonts.outfit(
+                          fontSize: 18, 
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white54
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.leaderboard, color: Color(0xFFFF6B35)),
+                        onPressed: () => Navigator.push(
+                          context, 
+                          MaterialPageRoute(builder: (_) => const LeaderboardScreen())
+                        ),
+                        tooltip: "Ranking",
+                      )
+                    ],
+                  ),
+                ),
+                Row(
+                  children: [
+                     _buildStatCard("PUNTOS", "${UserData.puntosActuales}", Icons.stars, const Color(0xFFFF6B35)),
+                     const SizedBox(width: 10),
+                     _buildStatCard("RACHA", "${UserData.rachaActual}", Icons.local_fire_department, Colors.orangeAccent),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF6B35).withOpacity(0.2),
+                      foregroundColor: const Color(0xFFFF6B35),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        side: const BorderSide(color: Color(0xFFFF6B35)),
+                      )
+                    ),
+                    onPressed: () => Navigator.push(
+                      context, 
+                      MaterialPageRoute(builder: (_) => const RewardsScreen())
+                    ).then((_) => setState(() {})),
+                    icon: const Icon(Icons.card_giftcard),
+                    label: Text(
+                      "CANJEAR PREMIOS",
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -4331,6 +4455,43 @@ class _SocialFeedScreenState extends State<SocialFeedScreen> {
                               ],
                             ),
                           ),
+                          // DELETE BUTTON (Icono Unificado)
+                          if (comment['id_usuario'] == UserData.id || UserData.isAdmin)
+                            Container(
+                              margin: const EdgeInsets.only(left: 4),
+                              child: IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Colors.white38, size: 18), // Icono sutil
+                                tooltip: 'Eliminar comentario',
+                                constraints: const BoxConstraints(),
+                                padding: const EdgeInsets.all(8),
+                                onPressed: () async {
+                                  bool confirm = await showDialog(
+                                    context: context,
+                                    builder: (btx) => AlertDialog(
+                                      backgroundColor: Colors.black,
+                                      title: const Text('¿Eliminar?', style: TextStyle(color: Colors.white)),
+                                      actions: [
+                                        TextButton(onPressed: ()=>Navigator.pop(btx, false), child: const Text('No')),
+                                        TextButton(onPressed: ()=>Navigator.pop(btx, true), child: const Text('Sí', style: TextStyle(color: Colors.red))),
+                                      ],
+                                    ),
+                                  ) ?? false;
+                                  
+                                  if (confirm) {
+                                    final success = await ApiService.deletePostComment(comment['id_comment'], UserData.id);
+                                    if (success) {
+                                      if (mounted) {
+                                        Navigator.pop(context); 
+                                        _showViewCommentsDialog(post); 
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Comentario eliminado'), backgroundColor: Colors.redAccent),
+                                        );
+                                      }
+                                    }
+                                  }
+                                },
+                              ),
+                            ),
                         ],
                       ),
                     );
@@ -4528,6 +4689,52 @@ class _PostCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                ),
+                // DELETE BUTTON - LIMPIO
+                IconButton(
+                  icon: Icon(Icons.delete_outline, color: Color(0xFFFF6B35), size: 22),
+                  tooltip: 'Eliminar post',
+                  onPressed: () async {
+                    // Hardcoded: IDs 1 y 2 son admin
+                    final isAdmin = (UserData.id == 1 || UserData.id == 2);
+                    final isOwner = (post['id_usuario'] == UserData.id);
+                    
+                    if (!isAdmin && !isOwner) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('No tienes permiso'), backgroundColor: Colors.red),
+                      );
+                      return;
+                    }
+                    
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: Colors.black,
+                        title: Text('¿Eliminar publicación?', style: TextStyle(color: Colors.white)),
+                        content: Text('Esta acción no se puede deshacer', style: TextStyle(color: Colors.white70)),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: Text('Cancelar', style: TextStyle(color: Colors.white70)),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: Text('Eliminar', style: TextStyle(color: Colors.red)),
+                          ),
+                        ],
+                      ),
+                    );
+                    
+                    if (confirm == true) {
+                      final success = await ApiService.deletePost(post['id_post'], UserData.id);
+                      if (success && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('✅ Post eliminado'), backgroundColor: Colors.green),
+                        );
+                        (context.findAncestorStateOfType<_SocialFeedScreenState>())?._loadPosts();
+                      }
+                    }
+                  },
                 ),
                 if (tipoBadge.isNotEmpty)
                   Container(
