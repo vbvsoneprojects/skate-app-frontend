@@ -18,7 +18,7 @@ COPY --from=build /app/build/web /usr/share/nginx/html
 # Copiar configuración custom de Nginx (para SPA routing)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Exponer puerto 80 (Render lo mapea automáticamente)
-EXPOSE 80
+# Exponer puerto 8080 (Render friendly)
+EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]
