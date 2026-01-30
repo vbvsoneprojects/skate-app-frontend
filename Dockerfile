@@ -1,24 +1,15 @@
-# Stage 1: Build Flutter Web
-FROM ghcr.io/cirruslabs/flutter:stable AS build
+# 🚀 ESTRATEGIA "PRE-BUILT" (Ligera para Render Starter)
+# Ya no compilamos aquí (ahorra 2GB de RAM). Solo servimos lo que subiste.
 
-WORKDIR /app
-COPY . .
-
-# Descargar dependencias y compilar
-# Usamos --obfuscate para seguridad y --release para performance
-RUN flutter pub get
-RUN flutter build web --release --obfuscate --split-debug-info=./debug-info
-
-# Stage 2: Serve with Nginx
 FROM nginx:alpine
 
-# Copiar build output al directorio de Nginx
-COPY --from=build /app/build/web /usr/share/nginx/html
-
-# Copiar configuración custom de Nginx (para SPA routing)
+# Copiar configuración de Nginx (Puerto 8080)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Exponer puerto 8080 (Render friendly)
+# Copiar la carpeta "build/web" que subiste al repo
+COPY build/web /usr/share/nginx/html
+
+# Exponer el puerto correcto
 EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]
