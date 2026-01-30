@@ -121,7 +121,7 @@ class _RewardsScreenState extends State<RewardsScreen> {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
-          "RECOMPENSAS",
+          "TIENDA DE PREMIOS",
           style: GoogleFonts.outfit(
             fontWeight: FontWeight.w900,
             letterSpacing: 2,

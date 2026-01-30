@@ -58,7 +58,8 @@ void main() {
 
 // ---------------- API SERVICE ----------------
 class ApiService {
-  static const String baseUrl = 'https://skate-api-jkuf.onrender.com/api';
+  // static const String baseUrl = 'https://skate-api-jkuf.onrender.com/api'; // RENDER (SUSPENDIDO)
+  static const String baseUrl = 'http://localhost:8000/api'; // LOCAL DOCKER
 
   static Future<Map<String, dynamic>?> login(String u, String p) async {
     try {
@@ -762,7 +763,12 @@ class _LoginScreenState extends State<LoginScreen> {
       UserData.trayectoria = data['trayectoria'];
       UserData.trayectoria = data['trayectoria'];
       UserData.isPremium = data['es_premium'] ?? false;
-      UserData.isAdmin = data['es_admin'] ?? false; // NUEVO
+      UserData.isAdmin = data['es_admin'] ?? false;
+      
+      // 🔥 ECONOMÍA PERSISTENTE
+      UserData.puntosActuales = data['puntos_actuales'] ?? 0;
+      UserData.puntosHistoricos = data['puntos_historicos'] ?? 0;
+      
       UserData.isLoggedIn = true;
       if (mounted) {
         Navigator.pushReplacement(
@@ -1149,7 +1155,7 @@ class _FeedScreenState extends State<FeedScreen> {
           
           // Enviar al servidor
           await http.post(
-            Uri.parse('https://skate-api-jkuf.onrender.com/api/users/status'),
+            Uri.parse('http://localhost:8000/api/users/status'),
             body: jsonEncode({
               'id': UserData.id,
               'visible': true,
@@ -1287,7 +1293,7 @@ class _FeedScreenState extends State<FeedScreen> {
         if (isVisible) {
           try {
             await http.post(
-              Uri.parse('https://skate-api-jkuf.onrender.com/api/users/status'),
+              Uri.parse('http://localhost:8000/api/users/status'),
               body: jsonEncode({
                 'id': UserData.id,
                 'visible': true,
