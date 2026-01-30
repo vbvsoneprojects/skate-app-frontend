@@ -58,8 +58,8 @@ void main() {
 
 // ---------------- API SERVICE ----------------
 class ApiService {
-  // static const String baseUrl = 'https://skate-api-jkuf.onrender.com/api'; // RENDER (SUSPENDIDO)
-  static const String baseUrl = 'http://localhost:8000/api'; // LOCAL DOCKER
+  static const String baseUrl = 'https://skate-api-jkuf.onrender.com/api'; // RENDER PROD
+  // static const String baseUrl = 'http://localhost:8000/api'; // DESARROLLO LOCAL
 
   static Future<Map<String, dynamic>?> login(String u, String p) async {
     try {
