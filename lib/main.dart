@@ -1155,7 +1155,7 @@ class _FeedScreenState extends State<FeedScreen> {
           
           // Enviar al servidor
           await http.post(
-            Uri.parse('http://localhost:8000/api/users/status'),
+            Uri.parse('${ApiService.baseUrl}/users/status'),
             body: jsonEncode({
               'id': UserData.id,
               'visible': true,
@@ -1293,7 +1293,7 @@ class _FeedScreenState extends State<FeedScreen> {
         if (isVisible) {
           try {
             await http.post(
-              Uri.parse('http://localhost:8000/api/users/status'),
+              Uri.parse('${ApiService.baseUrl}/users/status'),
               body: jsonEncode({
                 'id': UserData.id,
                 'visible': true,
